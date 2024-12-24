@@ -27,17 +27,16 @@ export default function Home() {
   const [autoConvert, setAutoConvert] = useState(true)
   const [outputFormat, setOutputFormat] = useState('plainText')
 
-  const convertMarkdown = (input: string) => {
+  const convertMarkdown = async (input: string) => {
     setMarkdown(input)
     const plainText = input
-    const html = marked(input)
+    const html = await convertToHTML(input)
     const latex = convertToLatex(input)
-    const xml = convertToXML(input)
+    const xml = await convertToXML(input)
     setOutputs({ plainText, html, latex, xml })
   }
 
-  const convertToLatex = (input: string) => {
-    // This is a simple conversion and doesn't cover all Markdown features
+  const convertToLatex = (input: string): string => {
     let latex = input
       .replace(/#{1,6}\s?([^\n]+)/g, (match, p1, offset, string) => {
         const level = match.trim().indexOf(' ')
@@ -49,9 +48,20 @@ export default function Home() {
     return latex
   }
 
-  const convertToXML = (input: string) => {
+  const convertToHTML = async (input: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const html = marked(input)
+        resolve(html)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+
+  const convertToXML = async (input: string): Promise<string> => {
     const parser = new DOMParser()
-    const htmlDoc = parser.parseFromString(marked(input), 'text/html')
+    const htmlDoc = parser.parseFromString(await convertToHTML(input), 'text/html')
     const serializer = new XMLSerializer()
     return serializer.serializeToString(htmlDoc)
   }
@@ -167,4 +177,3 @@ export default function Home() {
     </div>
   )
 }
-
