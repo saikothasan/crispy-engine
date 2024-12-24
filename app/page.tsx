@@ -2,17 +2,17 @@
 
 import { useState } from 'react'
 import { marked } from 'marked'
-import Header from './components/Header'
-import Footer from './components/Footer'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import About from './components/About'
-import Features from './components/Features'
-import FAQ from './components/FAQ'
+import About from '@/components/About'
+import Features from '@/components/Features'
+import FAQ from '@/components/FAQ'
 import { Copy, Download, RefreshCcw } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
