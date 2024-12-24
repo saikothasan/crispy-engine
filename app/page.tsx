@@ -1,101 +1,170 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import { marked } from 'marked'
+import Header from './components/Header'
+import Footer from './components/Footer'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import About from './components/About'
+import Features from './components/Features'
+import FAQ from './components/FAQ'
+import { Copy, Download, RefreshCcw } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [markdown, setMarkdown] = useState('')
+  const [outputs, setOutputs] = useState({
+    plainText: '',
+    html: '',
+    latex: '',
+    xml: ''
+  })
+  const [autoConvert, setAutoConvert] = useState(true)
+  const [outputFormat, setOutputFormat] = useState('plainText')
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+  const convertMarkdown = (input: string) => {
+    setMarkdown(input)
+    const plainText = input
+    const html = marked(input)
+    const latex = convertToLatex(input)
+    const xml = convertToXML(input)
+    setOutputs({ plainText, html, latex, xml })
+  }
+
+  const convertToLatex = (input: string) => {
+    // This is a simple conversion and doesn't cover all Markdown features
+    let latex = input
+      .replace(/#{1,6}\s?([^\n]+)/g, (match, p1, offset, string) => {
+        const level = match.trim().indexOf(' ')
+        return `\\${'sub'.repeat(level - 1)}section{${p1}}\n`
+      })
+      .replace(/\*\*(.+?)\*\*/g, '\\textbf{$1}')
+      .replace(/\*(.+?)\*/g, '\\textit{$1}')
+      .replace(/\[(.+?)\]$$(.+?)$$/g, '\\href{$2}{$1}')
+    return latex
+  }
+
+  const convertToXML = (input: string) => {
+    const parser = new DOMParser()
+    const htmlDoc = parser.parseFromString(marked(input), 'text/html')
+    const serializer = new XMLSerializer()
+    return serializer.serializeToString(htmlDoc)
+  }
+
+  const handleInputChange = (input: string) => {
+    setMarkdown(input)
+    if (autoConvert) {
+      convertMarkdown(input)
+    }
+  }
+
+  const handleConvert = () => {
+    convertMarkdown(markdown)
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Copied to clipboard!')
+  }
+
+  const downloadFile = (content: string, fileType: string) => {
+    const element = document.createElement('a')
+    const file = new Blob([content], { type: 'text/plain' })
+    element.href = URL.createObjectURL(file)
+    element.download = `converted.${fileType}`
+    document.body.appendChild(element)
+    element.click()
+    document.body.removeChild(element)
+    toast.success(`Downloaded ${fileType} file!`)
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900">
+      <Header />
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <Tabs defaultValue="converter" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-4 rounded-xl bg-blue-100 dark:bg-blue-900">
+            <TabsTrigger value="converter" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Converter</TabsTrigger>
+            <TabsTrigger value="about" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">About</TabsTrigger>
+            <TabsTrigger value="features" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Features</TabsTrigger>
+            <TabsTrigger value="faq" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">FAQ</TabsTrigger>
+          </TabsList>
+          <TabsContent value="converter" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Markdown Input</h2>
+                <textarea
+                  className="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 transition-colors duration-200"
+                  placeholder="Enter your Markdown here..."
+                  value={markdown}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                ></textarea>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="auto-convert"
+                      checked={autoConvert}
+                      onCheckedChange={setAutoConvert}
+                    />
+                    <Label htmlFor="auto-convert">Auto-convert</Label>
+                  </div>
+                  {!autoConvert && (
+                    <Button onClick={handleConvert} className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
+                      <RefreshCcw className="w-4 h-4 mr-2" />
+                      Convert
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Output</h2>
+                  <Select value={outputFormat} onValueChange={setOutputFormat}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="plainText">Plain Text</SelectItem>
+                      <SelectItem value="html">HTML</SelectItem>
+                      <SelectItem value="latex">LaTeX</SelectItem>
+                      <SelectItem value="xml">XML</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="relative">
+                  <div className="w-full h-64 p-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg overflow-auto transition-colors duration-200">
+                    <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">{outputs[outputFormat as keyof typeof outputs]}</pre>
+                  </div>
+                  <div className="absolute top-2 right-2 space-x-2">
+                    <Button size="icon" variant="outline" onClick={() => copyToClipboard(outputs[outputFormat as keyof typeof outputs])}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="outline" onClick={() => downloadFile(outputs[outputFormat as keyof typeof outputs], outputFormat)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="about">
+            <About />
+          </TabsContent>
+          <TabsContent value="features">
+            <Features />
+          </TabsContent>
+          <TabsContent value="faq">
+            <FAQ />
+          </TabsContent>
+        </Tabs>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <Footer />
     </div>
-  );
+  )
 }
+
